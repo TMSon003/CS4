@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Viewer</title>
+        <script src="/socket.io/socket.io.js"></script>
+    </head>
+    <body>
+        <h1>Your key value is:</h1>
+        <p id="value">loading...</p>
+        <script>
+            const locationPath = window.location.pathname.split("/");
+            const key = locationPath[locationPath.length - 1];
+
+            // Thiết lập kết nối WebSocket
+            const socket = io();
+
+            // Đăng ký lắng nghe với key hiện tại
+            socket.emit("register", key);
+
+            // Nhận dữ liệu cập nhật từ server
+            socket.on("valueUpdate", (data) => {
+                document.getElementById("value").innerText = data;
+            });
+
+            // Xử lý khi kết nối lần đầu để lấy giá trị ban đầu
+            socket.on("initialValue", (data) => {
+                document.getElementById("value").innerText = data;
+            });
+
+            // Xử lý lỗi kết nối
+            socket.on("connect_error", (error) => {
+                console.error("Connection error:", error);
+            });
+        </script>
+    </body>
+</html>
