@@ -7,7 +7,7 @@ const socketIo = require("socket.io");
 const lib = require("./utils");
 
 const app = express();
-const port = 8080;
+const port = 3000; // Đổi thành 3000 để khớp
 
 app.use(bodyParser.json());
 
@@ -22,10 +22,8 @@ io.on("connection", (socket) => {
     let subscribedKey = null;
 
     socket.on("register", async (key) => {
-        // Lưu key mà client muốn theo dõi
         subscribedKey = key;
 
-        // Thêm socket này vào danh sách theo dõi của key
         if (!keySubscribers[key]) {
             keySubscribers[key] = new Set();
         }
@@ -33,12 +31,9 @@ io.on("connection", (socket) => {
 
         // Gửi giá trị ban đầu
         try {
-            const initialValue = await db.get(
-                `SELECT value FROM keyvalue WHERE key = ?`,
-                key,
-            );
+            const initialValue = await lib.view(key); // Sử dụng lib.view
             if (initialValue) {
-                socket.emit("initialValue", initialValue.value);
+                socket.emit("initialValue", initialValue);
             } else {
                 socket.emit("initialValue", "Key not found");
             }
@@ -62,35 +57,50 @@ io.on("connection", (socket) => {
 app.post("/add", async (req, res) => {
     try {
         const { key, value } = req.body;
-        await lib.write(key, value);
-        res.send("Insert a new record successfully!");
-    } catch (err) {
-        res.send(err.toString());
-    }
-});
+        if (!key || !value) {
+            return res.status(400).send("Key and value are required.");
+        }
 
-app.post("/set", (req, res) => {
-    const key = req.body.key;
-    const value = req.body.value;
+        const currentValue = await lib.view(key);
+        if (currentValue !== value) {
+            await lib.write(key, value);
 
-    db.run(
-        `INSERT OR REPLACE INTO keyvalue (key, value) VALUES (?, ?)`,
-        [key, value],
-        function (err) {
-            if (err) {
-                return res.status(500).send(err.message);
-            }
-
-            // Thông báo cho tất cả clients đang theo dõi key này
+            // Phát sự kiện WebSocket nếu giá trị thay đổi
             if (keySubscribers[key]) {
                 for (const socket of keySubscribers[key]) {
                     socket.emit("valueUpdate", value);
                 }
             }
+        }
 
-            res.redirect(`/viewer/${key}`);
-        },
-    );
+        res.send("Data added successfully!");
+    } catch (err) {
+        console.error("Error in /add:", err);
+        res.status(500).send(err.toString());
+    }
+});
+
+app.post("/set", async (req, res) => {
+    try {
+        const { key, value } = req.body;
+        if (!key || !value) {
+            return res.status(400).send("Key and value are required.");
+        }
+
+        await lib.write(key, value);
+
+        // Phát sự kiện WebSocket đến các client đang theo dõi key này
+        if (keySubscribers[key]) {
+            for (const socket of keySubscribers[key]) {
+                socket.emit("valueUpdate", value);
+            }
+        }
+
+        res.send("Value updated successfully!");
+    } catch (err) {
+        console.error("Error in /set:", err);
+        res.status(500).send(err.toString());
+    }
 });
 
 app.get("/get/:id", async (req, res) => {
@@ -108,6 +118,6 @@ app.get("/viewer/:id", (req, res) => {
     res.sendFile(path.join(__dirname, "viewer.html"));
 });
 
-server.listen(3000, () => {
-    console.log("Server is running on http://localhost:3000");
+server.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
