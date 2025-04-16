@@ -19,6 +19,10 @@
             // Đăng ký lắng nghe với key hiện tại
             socket.emit("register", key);
 
+            socket.on("valueUpdate", (data) => {
+                document.getElementById("value").innerText = data;
+            });
+
             // Nhận dữ liệu cập nhật từ server
             socket.on("valueUpdate", (data) => {
                 document.getElementById("value").innerText = data;
