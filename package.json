@@ -1,19 +1,20 @@
 {
-  "name": "cs4",
+  "name": "code-sequelize",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
-  "author": "",
+  "author": "hien",
   "license": "ISC",
+  "description": "",
   "dependencies": {
-    "body-parser": "^1.20.3",
-    "cs4": "file:",
-    "express": "^4.21.2",
-    "path": "^0.12.7",
+    "code-sequelize": "file:",
+    "express": "^5.1.0",
+    "sequelize": "^6.37.7",
     "socket.io": "^4.8.1",
+    "sqlite": "^5.1.1",
     "sqlite3": "^5.1.7"
   }
 }
